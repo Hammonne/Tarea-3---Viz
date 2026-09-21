@@ -2,3 +2,4 @@ archive (9).zip
 archivos_nn/
 __pycache__/
 *.pyc
+eda/eda_report.py

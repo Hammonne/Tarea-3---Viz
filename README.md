@@ -45,8 +45,11 @@ artista → por pista) y para validar/agregar.
 
 ## 3. EDA exhaustivo — proceso y hallazgos
 
-Script completo: [`eda/eda_report.py`](eda/eda_report.py) · Reporte completo (log
-de 12 secciones): [`eda/eda_report.txt`](eda/eda_report.txt).
+Reporte tabular completo (log de 12 secciones — nulos, duplicados, outliers,
+correlaciones, limpieza): [`eda/eda_report.txt`](eda/eda_report.txt).
+Notebook visual: [`eda/eda_notebook.ipynb`](eda/eda_notebook.ipynb) → figuras en
+[`eda/figures/`](eda/figures/) (histogramas, boxplots, heatmap, barplots, series de
+tiempo). Los plots de esta sección vienen de ese notebook.
 
 ### 3.1 Calidad de datos
 
@@ -68,6 +71,15 @@ de 12 secciones): [`eda/eda_report.txt`](eda/eda_report.txt).
   lista real ni una columna separada. Se parsea con `ast.literal_eval`. **20.2% de
   las pistas son colaboraciones** (>1 artista), hasta 40 artistas en una sola pista.
 
+<p align="center">
+  <img src="eda/figures/fig01_missing_genre.png" width="46%">
+  <img src="eda/figures/fig02_duplicates.png" width="46%">
+</p>
+<p align="center">
+  <img src="eda/figures/fig10_collaborations.png" width="46%">
+  <img src="eda/figures/fig11_duration_sanity.png" width="46%">
+</p>
+
 ### 3.2 Escalas — crítico para RadViz / Star Coordinates / Parallel Coordinates
 
 Los 3 técnicas mandatorias son **extremadamente sensibles a escala**: un eje con
@@ -85,6 +97,8 @@ rango de cada feature:
 **Decisión:** se generan columnas `*_norm` (min-max sobre el dataset completo, no
 sobre la muestra) para las 11 features continuas. RadViz, Star Coordinates y
 Parallel Coordinates consumen **exclusivamente** las columnas `_norm`.
+
+<p align="center"><img src="eda/figures/fig05_scale_ranges.png" width="70%"></p>
 
 ### 3.3 Outliers — por qué IQR clásico no basta
 
@@ -106,6 +120,11 @@ outlier automáticamente**, porque en este dataset casi todos son señal, no rui
 - `popularity == 0` afecta al **16.3%** de las pistas — no es un outlier estadístico
   (está en rango válido) pero sí un caso de negocio a tratar aparte (ver 3.5).
 
+<p align="center">
+  <img src="eda/figures/fig03_histograms.png" width="100%">
+</p>
+<p align="center"><img src="eda/figures/fig04_boxplots.png" width="70%"></p>
+
 ### 3.4 Correlaciones (relevante para elegir ejes / evitar redundancia visual)
 
 Pares con `|r| > 0.4` (dataset completo):
@@ -126,6 +145,8 @@ ambos ejes de todas formas porque son físicamente distintos e interpretables, p
 se documenta para que el usuario entienda por qué ciertas nubes de puntos se ven
 "alineadas" al activar ambos anclajes en RadViz.
 
+<p align="center"><img src="eda/figures/fig06_correlation_heatmap.png" width="75%"></p>
+
 ### 3.5 Insight de negocio: la "paradoja de la popularidad"
 
 `popularity` correlaciona **0.86 con `year`** — el algoritmo de Spotify pondera
@@ -138,6 +159,8 @@ pista dentro de *su propio año* (`groupby("year").rank(pct=True)`). Esta column
 la que alimenta el filtro "solo top 5% de su año" en la vista de proyección
 (Task D), permitiendo comparar "qué tan hit fue" de forma justa entre épocas.
 
+<p align="center"><img src="eda/figures/fig08_popularity_paradox.png" width="90%"></p>
+
 ### 3.6 Enriquecimiento: género por pista
 
 `data.csv` no trae género; `data_w_genres.csv` trae género por **artista**. Se hizo
@@ -148,6 +171,8 @@ normalizar casing (`.str.lower().str.strip()`) — no mejoró el join en este da
 (los nombres ya vienen consistentes en mayúsculas/minúsculas), así que el 10.3% de
 `unknown` se deja explícito en vez de inventar un género. Es una limitación
 documentada, no oculta.
+
+<p align="center"><img src="eda/figures/fig09_top_genres.png" width="60%"></p>
 
 ### 3.7 Tendencias por década (evolución de la producción musical)
 
@@ -162,6 +187,8 @@ documentada, no oculta.
 `loudness` sube ~10dB en un siglo (**"loudness war"** de masterización — confirmado
 por `r(loudness, year) = 0.49`); `danceability` da su salto más grande en la
 última década. Estos tres hechos son la base directa de **Task C**.
+
+<p align="center"><img src="eda/figures/fig07_decade_trends.png" width="100%"></p>
 
 ### 3.8 Limpieza final aplicada (documentada, no agresiva)
 
@@ -245,8 +272,10 @@ data/
     tracks_sample.csv     ← muestra estratificada por década (~4,400 filas, sirve la app)
     by_year.csv, by_genres.csv, genres_list.json
 eda/
-  eda_report.py           ← EDA exhaustivo (12 secciones), genera data/processed/
-  eda_report.txt          ← log completo de salida
+  eda_report.py           ← EDA tabular exhaustivo (12 secciones), genera data/processed/ (local, no versionado)
+  eda_report.txt          ← log completo de salida de eda_report.py
+  eda_notebook.ipynb      ← EDA visual (histogramas, boxplots, heatmap, barplots, series de tiempo)
+  figures/                ← PNGs exportados del notebook (usados en este README)
 app/
   app.py                  ← rutas Flask (HTML shell + API JSON)
   data_service.py         ← carga datos, filtra, calcula PCA/t-SNE/centroides/anomaly score
