@@ -45,9 +45,10 @@ artista → por pista) y para validar/agregar.
 
 ## 3. EDA exhaustivo — proceso y hallazgos
 
-Reporte tabular completo (log de 12 secciones — nulos, duplicados, outliers,
-correlaciones, limpieza): [`eda/eda_report.txt`](eda/eda_report.txt).
-Notebook visual: [`eda/eda_notebook.ipynb`](eda/eda_notebook.ipynb) → figuras en
+El análisis tabular completo (12 secciones — nulos, duplicados, outliers,
+correlaciones, limpieza) se resume abajo; se generó con `eda/eda_report.py`
+(script local, no versionado) y sus hallazgos alimentan tanto este README como el
+notebook visual: [`eda/eda_notebook.ipynb`](eda/eda_notebook.ipynb) → figuras en
 [`eda/figures/`](eda/figures/) (histogramas, boxplots, heatmap, barplots, series de
 tiempo). Los plots de esta sección vienen de ese notebook.
 
@@ -273,7 +274,7 @@ data/
     by_year.csv, by_genres.csv, genres_list.json
 eda/
   eda_report.py           ← EDA tabular exhaustivo (12 secciones), genera data/processed/ (local, no versionado)
-  eda_report.txt          ← log completo de salida de eda_report.py
+  eda_report.txt          ← log de salida de eda_report.py (local, no versionado)
   eda_notebook.ipynb      ← EDA visual (histogramas, boxplots, heatmap, barplots, series de tiempo)
   figures/                ← PNGs exportados del notebook (usados en este README)
 app/
