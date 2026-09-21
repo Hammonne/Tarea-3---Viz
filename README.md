@@ -2,9 +2,14 @@
 
 DS5343 · Visualización de Datos · UTEC · 2026-2
 
-Aplicación web (**Flask** + **D3.js v7**) para explorar 170,653 pistas de Spotify
-(1921–2020) mediante técnicas de visualización multidimensional: **RadViz**,
-**Star Coordinates**, **Parallel Coordinates** y **proyección PCA/t-SNE**.
+Pipeline base (**Flask** + **D3.js v7**) para explorar 170,653 pistas de Spotify
+(1921–2020) mediante 4 técnicas de visualización multidimensional obligatorias:
+**RadViz**, **Star Coordinates**, **Parallel Coordinates** y **proyección PCA/t-SNE**.
+
+**Estado:** el backend (EDA, limpieza, API Flask con filtrado/PCA/t-SNE/centroides)
+está completo y funcional. El frontend es un esqueleto — cada vista (`app/static/js/*.js`)
+tiene la estructura, el contrato con la API y un comentario `TODO` explicando qué
+dibujar, pero el dibujo en D3 de las 4 técnicas queda por implementar.
 
 ---
 
@@ -221,8 +226,8 @@ de audio? ¿Qué anclajes "atraen" más a la música clásica vs. dance pop?
 *combinaciones* de features (no una sola), y el color por género (paleta
 categórica de 7 slots + "Other") deja ver de inmediato si un género forma una nube
 compacta cerca de un anclaje (ej. clásica cerca de *acousticness*) o está disperso.
-**Interacción:** click en un anclaje lo activa/desactiva en vivo (dimensional
-anchoring real, no cosmético) — mínimo 2 anclajes activos.
+**Interacción propuesta:** click en un anclaje lo activa/desactiva (dimensional
+anchoring) — mínimo 2 anclajes activos. *(pendiente de implementar, ver `radviz.js`)*
 
 ### Task B · Star Coordinates — "Detector de género-bender"
 **Pregunta:** ¿Qué pistas suenan "raro" para el género que tienen declarado? (ej.
@@ -232,9 +237,9 @@ pesos), Star Coordinates permite **pesar y rotar ejes libremente**, lo que deja 
 usuario "ampliar" ciertos rasgos para cazar anomalías. Se precalculó server-side
 (`data_service.py`) la distancia euclidiana de cada pista al centroide normalizado
 de su propio género — coloreable como capa alternativa (rampa secuencial aqua).
-**Interacción:** arrastrar el extremo de cualquier eje cambia su peso/ángulo en
-vivo (axis weighting + dragging, auto-fit de escala); toggle de color
-género ↔ distancia-a-centroide.
+**Interacción propuesta:** arrastrar el extremo de cualquier eje para cambiar su
+peso/ángulo (axis weighting + dragging); toggle de color género ↔
+distancia-a-centroide. *(pendiente de implementar, ver `starcoords.js`)*
 
 ### Task C · Parallel Coordinates — "La guerra del volumen"
 **Pregunta:** ¿cómo cambió la producción musical de 1921 a 2020? (hallazgo 3.7 del
@@ -243,9 +248,9 @@ EDA: acousticness↓, loudness↑, danceability↑ en la última década).
 **rango continuo** (ej. años 2015-2020, o loudness > -6dB) y ver cómo se
 redistribuyen *todos los demás ejes simultáneamente* — perfecto para una pregunta
 sobre evolución conjunta de múltiples variables a través del tiempo.
-**Interacción:** brushing (drag) en cualquiera de los 10 ejes (incluye `year` como
-eje explícito, no solo color) resalta/atenúa el resto de las líneas en vivo; color
-por década (rampa secuencial azul).
+**Interacción propuesta:** brushing (drag) en cualquiera de los ejes (sugerido:
+incluir `year` como eje explícito, no solo color) para resaltar/atenuar el resto
+de las líneas; color por década. *(pendiente de implementar, ver `parallel.js`)*
 
 ### Task D · Proyección (PCA / t-SNE) — "Línea de tiempo sonora y la paradoja de la popularidad"
 **Pregunta 1:** ¿la música sigue una trayectoria sonora continua entre décadas, o
@@ -258,8 +263,9 @@ década** (línea 1920→2020) sobre la nube de puntos individuales, y superpone
 *loadings* (vectores de las features originales) como biplot. t-SNE está disponible
 como alternativa (checkbox) para explorar estructura local no lineal en una muestra
 fija de 1,500 pistas.
-**Interacción:** toggle PCA/t-SNE, color por década o por percentil de popularidad
-del año, checkbox "solo top 5% de su año" (aplica directamente el hallazgo 3.5).
+**Interacción propuesta:** toggle PCA/t-SNE, color por década o por percentil de
+popularidad del año, checkbox "solo top 5% de su año" (aplica el hallazgo 3.5).
+*(el endpoint `/api/projection` ya funciona; el dibujo en `projection.js` está pendiente)*
 
 ---
 
@@ -278,25 +284,23 @@ eda/
   eda_notebook.ipynb      ← EDA visual (histogramas, boxplots, heatmap, barplots, series de tiempo)
   figures/                ← PNGs exportados del notebook (usados en este README)
 app/
-  app.py                  ← rutas Flask (HTML shell + API JSON)
-  data_service.py         ← carga datos, filtra, calcula PCA/t-SNE/centroides/anomaly score
-  templates/index.html    ← shell (4 tabs = 4 tasks, filtros globales)
-  static/css/style.css    ← tokens de color light/dark (skill dataviz)
+  app.py                  ← rutas Flask (HTML shell + API JSON) — completo
+  data_service.py         ← carga datos, filtra, calcula PCA/t-SNE/centroides/anomaly score — completo
+  templates/index.html    ← shell (4 tabs = 4 tasks, contenedores de filtros vacios)
+  static/css/style.css    ← tokens de color light/dark + layout base (header, tabs, grid)
   static/js/
-    utils.js               ← paleta, tooltip compartido, estado global, fetch
-    radviz.js               ← Task A
-    starcoords.js           ← Task B
-    parallel.js              ← Task C
-    projection.js            ← Task D
-    main.js                 ← orquestador: filtros, tabs, carga inicial
+    utils.js               ← fetch + estado global de filtros (generico)
+    radviz.js               ← Task A — TODO: dibujar RadViz
+    starcoords.js           ← Task B — TODO: dibujar Star Coordinates
+    parallel.js              ← Task C — TODO: dibujar Parallel Coordinates
+    projection.js            ← Task D — TODO: dibujar proyeccion + trayectoria de centroides
+    main.js                 ← orquestador minimo: carga inicial, tabs (filtros aun sin UI)
 ```
 
-**Flujo de datos:** el navegador nunca calcula PCA/t-SNE/centroides — todo eso vive
-en `data_service.py` (pandas + scikit-learn) y se expone como JSON delgado
-(`/api/tracks`, `/api/projection`, `/api/by_year`, `/api/meta`). D3 solo dibuja.
-Los filtros globales (género, rango de década) viven en `Viz.state` (JS) y
-re-disparan un fetch a `/api/tracks` que re-renderiza las 4 vistas a la vez —
-"los filtros escopan todo lo de abajo" (regla de diseño de dashboards).
+**Flujo de datos (ya funcional):** el navegador no necesita calcular PCA/t-SNE/
+centroides — todo eso vive en `data_service.py` (pandas + scikit-learn) y se
+expone como JSON delgado (`/api/tracks`, `/api/projection`, `/api/by_year`,
+`/api/meta`). Lo que falta es que D3 consuma ese JSON y dibuje.
 
 ### Endpoints
 
@@ -308,34 +312,43 @@ re-disparan un fetch a `/api/tracks` que re-renderiza las 4 vistas a la vez —
 | `GET /api/by_year` | agregados año a año (soporte para Task C) |
 | `GET /api/genre_centroids` | centroide normalizado por género (usado internamente para el anomaly score) |
 
-### Paleta y diseño
+### Paleta y diseño (recomendación, no aplicada aún)
 
-Se siguió el skill de dataviz interno: paleta categórica de 8 slots ya validada
-(CVD ΔE ≥ 12, ordenamiento fijo — nunca se reasigna un color al filtrar géneros),
-rampa secuencial de un solo tono (azul) para década/popularidad, segundo contexto
-secuencial (aqua) para el score de anomalía en Star Coordinates, tokens light/dark
-explícitos (no un invert automático), marcas ≥8px con halo de 2px del color de
-superficie, hit-targets ampliados, tooltip único compartido con `textContent` (no
-`innerHTML`, evita XSS con nombres de artista/canción que vienen de datos externos).
+Para cuando se implementen las 4 vistas, conviene seguir el skill de dataviz
+interno de este repo (`references/palette.md`): paleta categórica de 8 slots ya
+validada (CVD ΔE ≥ 12, ordenamiento fijo — nunca reasignar un color al filtrar
+géneros), rampa secuencial de un solo tono para década/popularidad, tokens
+light/dark explícitos (no un invert automático), marcas ≥8px con halo de 2px del
+color de superficie, hit-targets ampliados, y tooltip con `textContent` (no
+`innerHTML`, para evitar XSS con nombres de artista/canción que vienen de datos
+externos). `style.css` ya trae los tokens de color base (`:root` / `prefers-color-scheme: dark`).
 
 ---
 
-## 6. Verificación
+## 6. Qué falta (estado real del pipeline)
 
-El pipeline fue probado end-to-end con Playwright (headless Chromium) contra el
-servidor Flask real: las 4 vistas renderizan sin errores de consola, el tooltip
-responde a hover, el filtro de género y el slider de década re-renderizan las 4
-vistas en simultáneo, el brushing en Parallel Coordinates atenúa correctamente las
-líneas fuera de rango, el drag de ejes en Star Coordinates reescala (auto-fit), el
-toggle de anclajes en RadViz redistribuye los puntos con transición, y el modo
-oscuro usa los tokens dedicados (no un filtro CSS invertido).
+**Hecho:** descompresión de datos, EDA tabular + notebook visual, limpieza y
+enriquecimiento, API Flask completa (`/api/meta`, `/api/tracks`, `/api/projection`
+con PCA/t-SNE, `/api/by_year`, `/api/genre_centroids`), shell HTML con las 4 tabs,
+tokens de diseño base. Verificado con Playwright: el shell carga, las 4 pestañas
+navegan y cada vista muestra su placeholder, sin errores de consola.
 
-## 7. Limitaciones conocidas / próximos pasos
+**Pendiente (a propósito, no implementado por diseño):**
+- El dibujo en D3 de las 4 técnicas (`radviz.js`, `starcoords.js`, `parallel.js`,
+  `projection.js` — cada uno con el contrato de datos y un `TODO` explicando qué
+  construir).
+- La UI de filtros globales (género/década) — los contenedores existen en el HTML
+  y el backend ya acepta `?genres=&decade_min=&decade_max=`, falta la construcción
+  de chips/slider en `main.js`.
+- Interacciones (drag, brushing, tooltips, toggles) descritas como "interacción
+  propuesta" en cada task de la sección 4.
+
+## 7. Limitaciones conocidas del backend
 
 - El join género↔pista pierde 10.3% de las filas (artistas sin género catalogado o
   colaboraciones); se deja como `"unknown"` en vez de imputar.
-- La app sirve la muestra estratificada (4,400 filas) para que las vistas basadas
-  en SVG respondan en tiempo real; el dataset completo (170k) está procesado y
+- La app sirve la muestra estratificada (4,400 filas) para que las futuras vistas
+  SVG respondan en tiempo real; el dataset completo (170k) está procesado y
   disponible en `tracks_clean.csv` para análisis batch o para migrar a Canvas/WebGL
   si se necesita graficar el dataset completo punto por punto.
 - t-SNE se computa sobre una submuestra fija de 1,500 pistas (costoso) y se
