@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spotify · Visualizacion Multidimensional</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+<header class="app-header">
+  <div class="app-header__title">
+    <span class="app-header__logo">&#9679;</span>
+    <div>
+      <h1>Spotify Sonic Explorer</h1>
+      <p class="app-header__subtitle">Visualizacion multidimensional de 170,653 pistas (1921&ndash;2020) &middot; DS5343</p>
+    </div>
+  </div>
+  <div class="app-header__meta" id="datasetMeta">cargando dataset&hellip;</div>
+</header>
+
+<section class="filter-bar" aria-label="Filtros globales">
+  <div class="filter-bar__group">
+    <span class="filter-bar__label">Genero</span>
+    <div id="genreChips" class="chip-row"></div>
+  </div>
+  <div class="filter-bar__group filter-bar__group--grow">
+    <span class="filter-bar__label">Decada <span id="decadeRangeLabel"></span></span>
+    <div id="decadeSlider" class="range-slider"></div>
+  </div>
+  <button id="resetFilters" class="btn-ghost">Limpiar filtros</button>
+</section>
+
+<nav class="tabs" role="tablist" aria-label="Tareas analiticas">
+  <button class="tab active" data-tab="radviz" role="tab" aria-selected="true">
+    <span class="tab__index">Task A &middot; RadViz</span>
+    Firmas sonoras por genero
+  </button>
+  <button class="tab" data-tab="star" role="tab" aria-selected="false">
+    <span class="tab__index">Task B &middot; Star Coordinates</span>
+    Detector de genero-bender
+  </button>
+  <button class="tab" data-tab="parallel" role="tab" aria-selected="false">
+    <span class="tab__index">Task C &middot; Parallel Coordinates</span>
+    La guerra del volumen
+  </button>
+  <button class="tab" data-tab="projection" role="tab" aria-selected="false">
+    <span class="tab__index">Task D &middot; Proyeccion (PCA / t-SNE)</span>
+    Linea de tiempo sonora
+  </button>
+</nav>
+
+<main>
+  <section class="view active" id="view-radviz" aria-labelledby="tab-radviz">
+    <div class="view__intro">
+      <h2>&iquest;Como se agrupan los generos segun combinaciones de rasgos sonoros?</h2>
+      <p>RadViz ancla cada dimension de audio (valence, energy, danceability, acousticness&hellip;) en el borde
+        de un circulo. Cada pista es "jalada" hacia los anclajes con los que tiene mayor valor normalizado &mdash;
+        pistas acusticas se agrupan cerca de <em>acousticness</em>, pistas bailables cerca de <em>danceability</em>.
+        Click en un anclaje lo activa/desactiva (dimensional anchoring); esto redistribuye a todas las pistas en vivo.</p>
+    </div>
+    <div class="view__body">
+      <svg id="radvizSvg" class="chart-svg"></svg>
+      <aside class="side-panel" id="radvizLegend"></aside>
+    </div>
+  </section>
+
+  <section class="view" id="view-star" aria-labelledby="tab-star">
+    <div class="view__intro">
+      <h2>&iquest;Que pistas se alejan del perfil tipico de su propio genero?</h2>
+      <p>Star Coordinates coloca un eje-vector por rasgo de audio; la posicion de cada pista es la suma
+        ponderada de sus valores normalizados sobre esos vectores. Arrastra el extremo de un eje para
+        cambiar su peso/angulo, o usa los sliders. El color codifica la <strong>distancia de la pista al
+        centroide de su genero</strong> (naranja/rojo = suena "raro" para su genero declarado).</p>
+    </div>
+    <div class="view__body">
+      <svg id="starSvg" class="chart-svg"></svg>
+      <aside class="side-panel" id="starControls"></aside>
+    </div>
+  </section>
+
+  <section class="view" id="view-parallel" aria-labelledby="tab-parallel">
+    <div class="view__intro">
+      <h2>&iquest;Como cambio la produccion musical de 1920 a 2020?</h2>
+      <p>Cada linea es una pista; cada eje vertical un rasgo de audio normalizado, coloreado por decada
+        (rampa secuencial azul, mas oscuro = mas reciente). Arrastra sobre cualquier eje para dibujar un
+        <strong>brush</strong> y resaltar solo las pistas dentro de ese rango &mdash; util para comparar,
+        por ejemplo, <em>loudness</em> alto vs. bajo y ver como se redistribuyen en los demas ejes.</p>
+    </div>
+    <div class="view__body view__body--full">
+      <svg id="parallelSvg" class="chart-svg"></svg>
+    </div>
+  </section>
+
+  <section class="view" id="view-projection" aria-labelledby="tab-projection">
+    <div class="view__intro">
+      <h2>&iquest;Sigue la musica una trayectoria sonora continua, y los "hits" convergen entre epocas?</h2>
+      <p>Proyeccion PCA de 9 rasgos de audio normalizados a 2D. La linea gruesa conecta los
+        <strong>centroides por decada</strong> (1920&rarr;2020): una "linea de tiempo sonora". Activa
+        "Solo top 5% popularidad de su a&ntilde;o" para ver si los hits de distintas epocas convergen en
+        una misma region del plano pese a estar en decadas lejanas &mdash; la paradoja de la popularidad.</p>
+    </div>
+    <div class="view__body">
+      <svg id="projectionSvg" class="chart-svg"></svg>
+      <aside class="side-panel" id="projectionControls"></aside>
+    </div>
+  </section>
+</main>
+
+<div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+
+<script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+<script src="{{ url_for('static', filename='js/radviz.js') }}"></script>
+<script src="{{ url_for('static', filename='js/starcoords.js') }}"></script>
+<script src="{{ url_for('static', filename='js/parallel.js') }}"></script>
+<script src="{{ url_for('static', filename='js/projection.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
