@@ -6,10 +6,9 @@ Pipeline base (**Flask** + **D3.js v7**) para explorar 170,653 pistas de Spotify
 (1921–2020) mediante 4 técnicas de visualización multidimensional obligatorias:
 **RadViz**, **Star Coordinates**, **Parallel Coordinates** y **proyección PCA/t-SNE**.
 
-**Estado:** el backend (EDA, limpieza, API Flask con filtrado/PCA/t-SNE/centroides)
-está completo y funcional. El frontend es un esqueleto — cada vista (`app/static/js/*.js`)
-tiene la estructura, el contrato con la API y un comentario `TODO` explicando qué
-dibujar, pero el dibujo en D3 de las 4 técnicas queda por implementar.
+**Estado:** el backend y el frontend D3 están implementados. La app contiene cuatro
+tabs alineados con las tareas de la sección 4, filtros globales por género y década,
+tooltips y las interacciones propias de cada técnica.
 
 ---
 
@@ -212,62 +211,45 @@ por `r(loudness, year) = 0.49`); `danceability` da su salto más grande en la
 
 ---
 
-## 4. Las 4 tareas analíticas (no genéricas, basadas en el EDA)
+## 4. Las 4 tareas analíticas actuales
 
-El enunciado pide ≥3 tareas y una visualización obligatoria de cada técnica. En vez
-de usar el ejemplo literal del enunciado ("¿cómo se agrupan las pistas por
-energy/valence/danceability?"), cada tarea aquí nace de un hallazgo específico del
-EDA y está diseñada para esa técnica en particular — no es intercambiable.
+### Task 1 · Star Coordinates — Audio features y popularidad
+**Pregunta:** ¿Hay audio features más importantes al determinar la popularidad de
+una canción?
 
-### Task A · RadViz — "Firmas sonoras por género"
-**Pregunta:** ¿Gravitan distintos géneros hacia distintas combinaciones de rasgos
-de audio? ¿Qué anclajes "atraen" más a la música clásica vs. dance pop?
-**Por qué RadViz:** el dimensional anchoring es ideal quan la pregunta es sobre
-*combinaciones* de features (no una sola), y el color por género (paleta
-categórica de 7 slots + "Other") deja ver de inmediato si un género forma una nube
-compacta cerca de un anclaje (ej. clásica cerca de *acousticness*) o está disperso.
-**Interacción propuesta:** click en un anclaje lo activa/desactiva (dimensional
-anchoring) — mínimo 2 anclajes activos. *(pendiente de implementar, ver `radviz.js`)*
+Las canciones se proyectan mediante las nueve audio features normalizadas y se
+colorean en cinco rangos fijos de popularidad (`0–19`, `20–39`, `40–59`, `60–79`,
+`80–100`). Los extremos de los ejes se pueden arrastrar: la dirección modifica el
+ángulo y la distancia al centro modifica el peso, permitiendo comprobar qué
+combinaciones separan mejor los rangos de popularidad.
 
-### Task B · Star Coordinates — "Detector de género-bender"
-**Pregunta:** ¿Qué pistas suenan "raro" para el género que tienen declarado? (ej.
-una balada acústica catalogada como "dance pop").
-**Por qué Star Coordinates:** a diferencia de RadViz (que normaliza por la suma de
-pesos), Star Coordinates permite **pesar y rotar ejes libremente**, lo que deja al
-usuario "ampliar" ciertos rasgos para cazar anomalías. Se precalculó server-side
-(`data_service.py`) la distancia euclidiana de cada pista al centroide normalizado
-de su propio género — coloreable como capa alternativa (rampa secuencial aqua).
-**Interacción propuesta:** arrastrar el extremo de cualquier eje para cambiar su
-peso/ángulo (axis weighting + dragging); toggle de color género ↔
-distancia-a-centroide. *(pendiente de implementar, ver `starcoords.js`)*
+### Task 2 · RadViz — Similitud de audio features por género
+**Pregunta:** ¿Las canciones del mismo género tienen audio features similares?
 
-### Task C · Parallel Coordinates — "La guerra del volumen"
-**Pregunta:** ¿cómo cambió la producción musical de 1921 a 2020? (hallazgo 3.7 del
-EDA: acousticness↓, loudness↑, danceability↑ en la última década).
-**Por qué Parallel Coordinates:** es la única técnica de las 4 donde brushear un
-**rango continuo** (ej. años 2015-2020, o loudness > -6dB) y ver cómo se
-redistribuyen *todos los demás ejes simultáneamente* — perfecto para una pregunta
-sobre evolución conjunta de múltiples variables a través del tiempo.
-**Interacción propuesta:** brushing (drag) en cualquiera de los ejes (sugerido:
-incluir `year` como eje explícito, no solo color) para resaltar/atenuar el resto
-de las líneas; color por década. *(pendiente de implementar, ver `parallel.js`)*
+Cada audio feature es un anclaje y cada canción se ubica mediante el promedio
+ponderado de sus valores normalizados. Los puntos se colorean por género. El usuario
+puede activar o desactivar anclajes (con un mínimo de dos) y observar cómo cambia la
+separación entre grupos.
 
-### Task D · Proyección (PCA / t-SNE) — "Línea de tiempo sonora y la paradoja de la popularidad"
-**Pregunta 1:** ¿la música sigue una trayectoria sonora continua entre décadas, o
-son épocas discretas y separadas? **Pregunta 2** (hallazgo 3.5): ¿los "hits" de
-distintas épocas convergen hacia una misma región sonora pese a estar lejos en el
-tiempo?
-**Por qué PCA (proyección obligatoria):** reduce las 9 features de audio a 2D
-preservando varianza global — permite dibujar una **trayectoria de centroides por
-década** (línea 1920→2020) sobre la nube de puntos individuales, y superponer los
-*loadings* (vectores de las features originales) como biplot. t-SNE está disponible
-como alternativa (checkbox) para explorar estructura local no lineal en una muestra
-fija de 1,500 pistas.
-**Interacción propuesta:** toggle PCA/t-SNE, color por década o por percentil de
-popularidad del año, checkbox "solo top 5% de su año" (aplica el hallazgo 3.5).
-*(el endpoint `/api/projection` ya funciona; el dibujo en `projection.js` está pendiente)*
+### Task 3 · Star Coordinates — Similitud de audio features por modo
+**Pregunta:** ¿Las canciones con el mismo modo (mayor o menor) tienen audio features
+similares?
 
----
+Se utiliza una segunda instancia independiente de Star Coordinates, coloreada por
+modo mayor/menor. Sus ejes también se pueden arrastrar y ponderar para buscar una
+configuración que revele separación o solapamiento entre ambos grupos.
+
+### Task 4 · PCA + Parallel Coordinates — Evolución temporal
+**Pregunta:** ¿Hay una evolución de las características de las canciones a través
+del tiempo?
+
+El tab combina dos vistas. El scatterplot de PCA reduce las nueve audio features a
+dos componentes y colorea por década. Parallel Coordinates presenta las mismas
+features junto con el año; permite alternar entre escalas originales y normalizadas,
+reordenar ejes mediante drag horizontal, invertirlos haciendo clic en sus nombres y
+aplicar brushing simultáneo para resaltar rangos.
+
+Los filtros globales de género y década actualizan las cuatro tareas.
 
 ## 5. Arquitectura del pipeline
 
@@ -290,11 +272,11 @@ app/
   static/css/style.css    ← tokens de color light/dark + layout base (header, tabs, grid)
   static/js/
     utils.js               ← fetch + estado global de filtros (generico)
-    radviz.js               ← Task A — TODO: dibujar RadViz
-    starcoords.js           ← Task B — TODO: dibujar Star Coordinates
-    parallel.js              ← Task C — TODO: dibujar Parallel Coordinates
-    projection.js            ← Task D — TODO: dibujar proyeccion + trayectoria de centroides
-    main.js                 ← orquestador minimo: carga inicial, tabs (filtros aun sin UI)
+    radviz.js               ← Task 2 — RadViz por género + dimensional anchoring
+    starcoords.js           ← Tasks 1 y 3 — ejes con peso/ángulo arrastrables
+    parallel.js             ← Task 4 — escalas, reordenamiento, inversión y brushing
+    projection.js           ← Task 4 — scatterplot PCA por década
+    main.js                 ← orquestador, tabs y filtros globales
 ```
 
 **Flujo de datos (ya funcional):** el navegador no necesita calcular PCA/t-SNE/
@@ -325,23 +307,13 @@ externos). `style.css` ya trae los tokens de color base (`:root` / `prefers-colo
 
 ---
 
-## 6. Qué falta (estado real del pipeline)
+## 6. Estado actual del pipeline
 
-**Hecho:** descompresión de datos, EDA tabular + notebook visual, limpieza y
-enriquecimiento, API Flask completa (`/api/meta`, `/api/tracks`, `/api/projection`
-con PCA/t-SNE, `/api/by_year`, `/api/genre_centroids`), shell HTML con las 4 tabs,
-tokens de diseño base. Verificado con Playwright: el shell carga, las 4 pestañas
-navegan y cada vista muestra su placeholder, sin errores de consola.
-
-**Pendiente (a propósito, no implementado por diseño):**
-- El dibujo en D3 de las 4 técnicas (`radviz.js`, `starcoords.js`, `parallel.js`,
-  `projection.js` — cada uno con el contrato de datos y un `TODO` explicando qué
-  construir).
-- La UI de filtros globales (género/década) — los contenedores existen en el HTML
-  y el backend ya acepta `?genres=&decade_min=&decade_max=`, falta la construcción
-  de chips/slider en `main.js`.
-- Interacciones (drag, brushing, tooltips, toggles) descritas como "interacción
-  propuesta" en cada task de la sección 4.
+**Hecho:** descompresión de datos, EDA, limpieza, enriquecimiento, API Flask,
+cuatro tabs y visualizaciones D3 completas. Están implementados los filtros globales,
+tooltips seguros, dimensional anchoring en RadViz, dragging/weighting en las dos
+instancias de Star Coordinates, y escalado, inversión y brushing en Parallel
+Coordinates. Task 4 reúne PCA y Parallel Coordinates en un solo tab.
 
 ## 7. Limitaciones conocidas del backend
 

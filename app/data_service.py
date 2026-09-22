@@ -102,7 +102,7 @@ class DataStore:
         cols = [
             "id", "name", "main_artist", "n_artists", "year", "decade",
             "primary_genre", "genre_bucket", "explicit", "popularity",
-            "popularity_pct_in_year", "anomaly_score_norm",
+            "mode", "popularity_pct_in_year", "anomaly_score_norm",
         ] + CORE_FEATURES + [f"{f}_norm" for f in CORE_FEATURES]
         out = df[cols].astype(object)
         out = out.where(pd.notnull(out), None)

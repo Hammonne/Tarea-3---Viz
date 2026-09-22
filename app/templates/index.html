@@ -3,87 +3,51 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Spotify · Visualizacion Multidimensional</title>
+<title>Spotify · Visualización Multidimensional</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
 <header class="app-header">
-  <div class="app-header__title">
-    <span class="app-header__logo">&#9679;</span>
-    <div>
-      <h1>Spotify Sonic Explorer</h1>
-      <p class="app-header__subtitle">Pipeline base · DS5343</p>
-    </div>
-  </div>
-  <div class="app-header__meta" id="datasetMeta">cargando dataset&hellip;</div>
+  <div class="app-header__title"><span class="app-header__logo">●</span><div><h1>Spotify Sonic Explorer</h1><p class="app-header__subtitle">Cuatro preguntas · DS5343</p></div></div>
+  <div class="app-header__meta" id="datasetMeta">cargando dataset…</div>
 </header>
-
-<!-- TODO: construir filtros globales aqui (genero -> #genreChips, decada -> #decadeSlider).
-     El backend ya soporta ?genres=&decade_min=&decade_max= en /api/tracks y /api/projection. -->
 <section class="filter-bar" aria-label="Filtros globales">
-  <div class="filter-bar__group">
-    <span class="filter-bar__label">Genero</span>
-    <div id="genreChips" class="chip-row"></div>
-  </div>
-  <div class="filter-bar__group filter-bar__group--grow">
-    <span class="filter-bar__label">Decada</span>
-    <div id="decadeSlider" class="range-slider"></div>
-  </div>
+  <div class="filter-bar__group"><span class="filter-bar__label">Género</span><div id="genreChips" class="chip-row"></div></div>
+  <div class="filter-bar__group filter-bar__group--grow"><span class="filter-bar__label">Décadas</span><div id="decadeSlider" class="range-slider"></div></div>
 </section>
-
-<nav class="tabs" role="tablist" aria-label="Tareas analiticas">
-  <button class="tab active" data-tab="radviz" role="tab" aria-selected="true">
-    <span class="tab__index">Task A &middot; RadViz</span>
-    Firmas sonoras por genero
-  </button>
-  <button class="tab" data-tab="star" role="tab" aria-selected="false">
-    <span class="tab__index">Task B &middot; Star Coordinates</span>
-    Detector de genero-bender
-  </button>
-  <button class="tab" data-tab="parallel" role="tab" aria-selected="false">
-    <span class="tab__index">Task C &middot; Parallel Coordinates</span>
-    La guerra del volumen
-  </button>
-  <button class="tab" data-tab="projection" role="tab" aria-selected="false">
-    <span class="tab__index">Task D &middot; Proyeccion (PCA / t-SNE)</span>
-    Linea de tiempo sonora
-  </button>
+<nav class="tabs" role="tablist" aria-label="Tareas analíticas">
+  <button class="tab active" data-tab="popularity" role="tab" aria-selected="true"><span class="tab__index">Task 1 · Star Coordinates</span>Features y popularidad</button>
+  <button class="tab" data-tab="genre" role="tab" aria-selected="false"><span class="tab__index">Task 2 · RadViz</span>Similitud por género</button>
+  <button class="tab" data-tab="mode" role="tab" aria-selected="false"><span class="tab__index">Task 3 · Star Coordinates</span>Similitud por modo</button>
+  <button class="tab" data-tab="evolution" role="tab" aria-selected="false"><span class="tab__index">Task 4 · PCA + Parallel Coordinates</span>Evolución por década</button>
 </nav>
-
 <main>
-  <section class="view active" id="view-radviz" aria-labelledby="tab-radviz">
-    <p class="view__intro">¿Como gravitan distintos generos hacia distintas combinaciones de rasgos de audio? (ver README, Task A)</p>
-    <div class="view__body">
-      <svg id="radvizSvg" class="chart-svg"></svg>
-      <aside class="side-panel" id="radvizLegend"></aside>
-    </div>
+  <section class="view active" id="view-popularity">
+    <h2>¿Qué audio features son más importantes al determinar la popularidad?</h2>
+    <p class="view__intro">Los rangos de popularidad colorean las canciones. Arrastra los extremos de los ejes para cambiar su dirección y peso.</p>
+    <div class="view__body"><svg id="popularityStarSvg" class="chart-svg"></svg><aside class="side-panel" id="popularityStarControls"></aside></div>
   </section>
-
-  <section class="view" id="view-star" aria-labelledby="tab-star">
-    <p class="view__intro">¿Que pistas se alejan del perfil tipico de su propio genero? (ver README, Task B)</p>
-    <div class="view__body">
-      <svg id="starSvg" class="chart-svg"></svg>
-      <aside class="side-panel" id="starControls"></aside>
-    </div>
+  <section class="view" id="view-genre">
+    <h2>¿Las canciones del mismo género tienen audio features similares?</h2>
+    <p class="view__intro">Activa o desactiva anclajes para investigar qué dimensiones separan mejor los géneros.</p>
+    <div class="view__body"><svg id="radvizSvg" class="chart-svg"></svg><aside class="side-panel" id="radvizLegend"></aside></div>
   </section>
-
-  <section class="view" id="view-parallel" aria-labelledby="tab-parallel">
-    <p class="view__intro">¿Como cambio la produccion musical de 1921 a 2020? (ver README, Task C)</p>
-    <div class="view__body view__body--full">
-      <svg id="parallelSvg" class="chart-svg"></svg>
-    </div>
+  <section class="view" id="view-mode">
+    <h2>¿Las canciones con el mismo modo tienen audio features similares?</h2>
+    <p class="view__intro">Compara canciones en modo mayor y menor. Arrastra cada eje para explorar distintas ponderaciones.</p>
+    <div class="view__body"><svg id="modeStarSvg" class="chart-svg"></svg><aside class="side-panel" id="modeStarControls"></aside></div>
   </section>
-
-  <section class="view" id="view-projection" aria-labelledby="tab-projection">
-    <p class="view__intro">¿Sigue la musica una trayectoria sonora continua, y los "hits" convergen entre epocas? (ver README, Task D)</p>
-    <div class="view__body">
-      <svg id="projectionSvg" class="chart-svg"></svg>
-      <aside class="side-panel" id="projectionControls"></aside>
+  <section class="view" id="view-evolution">
+    <h2>¿Hay una evolución de las características de las canciones a través del tiempo?</h2>
+    <p class="view__intro">El PCA muestra la estructura global por década; Parallel Coordinates permite escalar ejes y seleccionar rangos con brushing.</p>
+    <div class="chart-stack">
+      <div class="view__body"><svg id="projectionSvg" class="chart-svg"></svg><aside class="side-panel" id="projectionControls"></aside></div>
+      <div class="view__body view__body--full"><svg id="parallelSvg" class="chart-svg"></svg></div>
     </div>
   </section>
 </main>
-
+<div id="vizTooltip" class="tooltip" role="status"></div>
 <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
 <script src="{{ url_for('static', filename='js/radviz.js') }}"></script>
 <script src="{{ url_for('static', filename='js/starcoords.js') }}"></script>
