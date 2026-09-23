@@ -1,13 +1,83 @@
 // Task 4b — Parallel Coordinates with per-axis scaling, inversion and brushing.
 const ParallelCoords = (() => {
-  let svg, features = [], tracks = [], normalized = false, dimensionOrder = [];
+  let svg, panel, features = [], tracks = [], normalized = false, dimensionOrder = [];
   const inverted = new Set();
   const selections = new Map();
 
   function init(meta) {
     svg = d3.select("#parallelSvg");
+    panel = d3.select("#parallelControls");
     features = meta.features;
     dimensionOrder = ["year", ...features];
+  }
+
+  // Columnas z-scoreadas para medir correlación entre ejes (independiente del
+  // toggle de escala original/normalizada, que sólo afecta el dibujo).
+  function correlationColumns() {
+    return dimensionOrder.map(dim => {
+      if (dim === "year") {
+        const col = tracks.map(t => +t.year);
+        const m = d3.mean(col), s = d3.deviation(col) || 1;
+        return col.map(v => (v - m) / s);
+      }
+      return tracks.map(t => +t[`${dim}_norm`] || 0);
+    });
+  }
+
+  // Métrica de Parallel Coordinates: cruces de líneas entre ejes adyacentes.
+  // Neighborhood Preservation (kNN) no aplica aquí porque PCP no reduce
+  // dimensionalidad (cada eje es una dimensión real, no una proyección 2D);
+  // ver docs/neighborhood_preservation.md sección 4. Los cruces sí son una
+  // métrica estándar de "clutter" propia de esta técnica (Ankerst et al.
+  // 1998), y además es barata de calcular a escala completa (O(n log n) por
+  // par de ejes) a diferencia de kNN, que es O(n²) y obligó a submuestrear en
+  // RadViz/Star.
+  function computeCrossings(dims, scales, valueFor) {
+    const n = tracks.length;
+    let total = 0;
+    for (let i = 0; i < dims.length - 1; i++) {
+      const a = tracks.map(t => scales[dims[i]](valueFor(t, dims[i])));
+      const b = tracks.map(t => scales[dims[i + 1]](valueFor(t, dims[i + 1])));
+      total += Metrics.crossingsBetween(a, b);
+    }
+    const pairs = Math.max(1, dims.length - 1);
+    const maxPerPair = n * (n - 1) / 2;
+    const ratio = maxPerPair > 0 ? total / (pairs * maxPerPair) : 0;
+    return { total, ratio, pairs };
+  }
+
+  function drawPanel(crossings) {
+    panel.selectAll("*").remove();
+    panel.append("h3").text("Controles");
+    panel.append("p").text(
+      "El orden de los ejes se puede arrastrar a mano, o reordenar automáticamente por correlación."
+    );
+    panel.append("button")
+      .attr("class", "control-button")
+      .text("Optimizar orden (correlación)")
+      .on("click", () => {
+        dimensionOrder = Metrics.correlationOrder(dimensionOrder, correlationColumns());
+        selections.clear();
+        draw();
+      });
+    panel.append("button")
+      .attr("class", "control-button")
+      .text("Restablecer orden")
+      .on("click", () => {
+        dimensionOrder = ["year", ...features];
+        inverted.clear();
+        selections.clear();
+        draw();
+      });
+
+    const metric = panel.append("div").attr("class", "panel-section");
+    metric.append("h3").text("Cruces de líneas (clutter)");
+    metric.append("p").attr("class", "crossing-metric").text(
+      `${(crossings.ratio * 100).toFixed(1)}% de los pares posibles cruzan entre ejes adyacentes`
+    );
+    metric.append("p").text(
+      `${crossings.total.toLocaleString("es")} cruces totales en ${crossings.pairs} pares de ejes adyacentes. Menos cruces = patrones más legibles; ejes correlacionados y adyacentes cruzan menos.`
+    );
   }
 
   // Redibuja por completo para mantener sincronizados escalas, ejes y brushes.
@@ -48,6 +118,8 @@ const ParallelCoords = (() => {
     const path = track => line(
       dims.map(dim => [position(dim), scales[dim](valueFor(track, dim))])
     );
+
+    drawPanel(computeCrossings(dims, scales, valueFor));
 
     Viz.decadeColor.domain(d3.extent(tracks, d => +d.decade));
 

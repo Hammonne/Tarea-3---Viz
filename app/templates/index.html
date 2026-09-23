@@ -43,12 +43,13 @@
     <p class="view__intro">El PCA muestra la estructura global por década; Parallel Coordinates permite escalar ejes y seleccionar rangos con brushing.</p>
     <div class="chart-stack">
       <div class="view__body"><svg id="projectionSvg" class="chart-svg"></svg><aside class="side-panel" id="projectionControls"></aside></div>
-      <div class="view__body view__body--full"><svg id="parallelSvg" class="chart-svg"></svg></div>
+      <div class="view__body"><svg id="parallelSvg" class="chart-svg"></svg><aside class="side-panel" id="parallelControls"></aside></div>
     </div>
   </section>
 </main>
 <div id="vizTooltip" class="tooltip" role="status"></div>
 <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+<script src="{{ url_for('static', filename='js/metrics.js') }}"></script>
 <script src="{{ url_for('static', filename='js/radviz.js') }}"></script>
 <script src="{{ url_for('static', filename='js/starcoords.js') }}"></script>
 <script src="{{ url_for('static', filename='js/parallel.js') }}"></script>

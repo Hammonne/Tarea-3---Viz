@@ -228,8 +228,9 @@ combinaciones separan mejor los rangos de popularidad.
 
 Cada audio feature es un anclaje y cada canción se ubica mediante el promedio
 ponderado de sus valores normalizados. Los puntos se colorean por género. El usuario
-puede activar o desactivar anclajes (con un mínimo de dos) y observar cómo cambia la
-separación entre grupos.
+puede activar o desactivar anclajes (con un mínimo de dos), y arrastrar cada anclaje
+sobre el perímetro del círculo (RadViz clásico: sólo cambia el ángulo, sin peso) para
+observar cómo cambia la separación entre grupos.
 
 ### Task 3 · Star Coordinates — Similitud de audio features por modo
 **Pregunta:** ¿Las canciones con el mismo modo (mayor o menor) tienen audio features
@@ -250,6 +251,27 @@ reordenar ejes mediante drag horizontal, invertirlos haciendo clic en sus nombre
 aplicar brushing simultáneo para resaltar rangos.
 
 Los filtros globales de género y década actualizan las cuatro tareas.
+
+### Neighborhood Preservation, algoritmo Germain y métrica de Parallel Coordinates
+
+Las cuatro vistas se evalúan cuantitativamente, no sólo a ojo:
+
+- **RadViz y Star Coordinates** (las tres instancias) muestran un badge en
+  vivo de *Neighborhood Preservation* (k=10, kNN contra las 9 features
+  originales) y un botón **"Ejes Germain (t-SNE transpuesta)"** que
+  reposiciona los ejes transponiendo la matriz de datos y corriendo t-SNE
+  sobre esa transpuesta — features correlacionadas terminan con ejes
+  cercanos entre sí. Mejora NP entre 15% y 26% frente a ejes equiespaciados,
+  con una tabla comparativa por k (5/10/20) en cada panel.
+- **Parallel Coordinates** no reduce dimensionalidad, así que NP no aplica;
+  en su lugar el panel lateral muestra el **% de cruces de líneas** entre
+  ejes adyacentes (métrica estándar de "clutter" en PCP) y un botón
+  **"Optimizar orden (correlación)"** que reordena los ejes para reducirlos
+  (~46% → ~37% de pares cruzados en la muestra completa).
+
+Metodología, fórmulas y resultados medidos (validados con una implementación
+independiente en Python/scikit-learn):
+[`docs/neighborhood_preservation.md`](docs/neighborhood_preservation.md).
 
 ## 5. Arquitectura del pipeline
 
@@ -272,11 +294,14 @@ app/
   static/css/style.css    ← tokens de color light/dark + layout base (header, tabs, grid)
   static/js/
     utils.js               ← fetch + estado global de filtros (generico)
-    radviz.js               ← Task 2 — RadViz por género + dimensional anchoring
+    metrics.js              ← kNN, Neighborhood Preservation, algoritmo Germain (t-SNE), correlación, cruces (compartido)
+    radviz.js               ← Task 2 — RadViz por género + dimensional anchoring + anclajes arrastrables
     starcoords.js           ← Tasks 1 y 3 — ejes con peso/ángulo arrastrables
-    parallel.js             ← Task 4 — escalas, reordenamiento, inversión y brushing
+    parallel.js             ← Task 4 — escalas, reordenamiento, inversión, brushing y métrica de cruces
     projection.js           ← Task 4 — scatterplot PCA por década
     main.js                 ← orquestador, tabs y filtros globales
+docs/
+  neighborhood_preservation.md ← metodología y resultados de NP / algoritmo Germain / métrica de PCP
 ```
 
 **Flujo de datos (ya funcional):** el navegador no necesita calcular PCA/t-SNE/
